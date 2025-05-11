@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Analysis Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        h1 { color: #333; }
+        ul { padding-left: 1.5rem; }
+    </style>
+</head>
+<body>
+    <h1>Web Page Analysis Result</h1>
+    <p>Here are the details of the analysis for the URL: <strong>{{.Data}}</strong></p>
+    <!-- <ul>
+        <li><strong>HTML Version:</strong> {{.HTMLVersion}}</li>
+        <li><strong>Title:</strong> {{.Title}}</li>
+        <li><strong>Contains Login Form:</strong> {{.HasLoginForm}}</li>
+        <li><strong>Headings:</strong>
+            <ul>
+                {{range $level, $count := .Headings}}
+                    <li>H{{$level}}: {{$count}}</li>
+                {{end}}
+            </ul>
+        </li>
+        <li><strong>Links:</strong>
+            <ul>
+                <li>Internal: {{.InternalLinks}}</li>
+                <li>External: {{.ExternalLinks}}</li>
+                <li>Inaccessible: {{.BrokenLinks}}</li>
+            </ul>
+        </li>
+    </ul> -->
+
+    <a href="/">Analyze Another Page</a>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Page Analyzer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        .error { color: red; }
+        .result { margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <h1>Enter URL to Analyze</h1>
+
+    <form id="analyze-form">
+        <input type="text" id="url" placeholder="https://example.com" size="50" />
+        <button type="submit">Analyze</button>
+    </form>
+
+    <p class="error" id="error"></p>
+
+    <div id="result" class="result" style="display:none;"></div>
+
+    <script>
+    document.getElementById("analyze-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+    
+        const url = document.getElementById("url").value;
+        const errorEl = document.getElementById("error");
+        const resultEl = document.getElementById("result");
+    
+        errorEl.textContent = "";
+        resultEl.style.display = "none";
+    
+        try {
+            const res = await fetch("/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url })
+            });
+    
+            const data = await res.json();
+    
+            if (!res.ok) {
+                errorEl.textContent = data.error || "Something went wrong";
+                return;
+            }
+    
+            // Build HTML with template literals
+            let headingsHtml = "";
+            for (const level in data.Headings) {
+                headingsHtml += `<li>H${level}: ${data.Headings[level]}</li>`;
+            }
+    
+            resultEl.innerHTML = `
+
+                <h3>Analysis Result for URL: <strong>${data.Data}</strong></h3>
+                
+            `;
+    
+            resultEl.style.display = "block";
+        } catch (err) {
+            errorEl.textContent = err.message;
+        }
+    });
+    </script>
+    
+</body>
+</html>
