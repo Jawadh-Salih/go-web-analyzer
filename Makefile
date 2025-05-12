@@ -26,6 +26,10 @@ test:
 	@echo "Running tests..."
 	@go test ./... -v
 
+coverage:
+	@echo "Running tests with coverage..."
+	@go test ./... -coverprofile=coverage.out
+
 clean:
 	@echo "Cleaning up..."
 	@rm -rf $(BUILD_DIR)
