@@ -1,18 +1,22 @@
 package server
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	port   string
-	router *gin.Engine
-	logger *slog.Logger
+	port          string
+	logger        *slog.Logger
+	svr           *http.Server
+	router        *gin.Engine
+	withTemplates bool
 }
 
-func New(port string, logger *slog.Logger) *Server {
+func New(port string, logger *slog.Logger, withTemplates bool) *Server {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -25,11 +29,23 @@ func New(port string, logger *slog.Logger) *Server {
 	}
 
 	s.setupMiddleware()
-	s.registerRoutes()
+	s.registerRoutes(withTemplates)
 
+	svr := &http.Server{
+		Addr:    port,
+		Handler: r,
+	}
+
+	s.svr = svr
 	return s
 }
 
 func (s *Server) Start() error {
 	return s.router.Run(s.port)
+}
+
+func (s *Server) Stop(ctx context.Context) error {
+	// Implement graceful shutdown logic if needed
+	s.logger.Info("Server is stopping...")
+	return s.svr.Shutdown(ctx)
 }

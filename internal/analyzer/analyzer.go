@@ -85,7 +85,8 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		htmlSnippet := string(body[:2048])
+		buffer := int(math.Min(float64(len(body)), 2048))
+		htmlSnippet := string(body[:buffer])
 		if htmlSnippet == "" {
 			resultChan <- AnalyzerResponse{err: errors.New("empty HTML snippet")}
 			return

@@ -55,12 +55,10 @@
 
             // Build HTML with template literals
             let errorsHtml = "";
-            console.log(data.Errors);
             for (const error of data.Errors) {
                 errorsHtml += `<li> ${error} </li>`;
             }
 
-            console.log(data.Links + "asdadasda")
             let linksHtml = "";
             if (data.Links ) {
                 linksHtml += `<table border="1" style="border-collapse: collapse; width: 100%;">`+
