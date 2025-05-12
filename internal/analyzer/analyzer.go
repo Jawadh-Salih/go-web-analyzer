@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -86,7 +87,7 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 		defer wg.Done()
 		htmlSnippet := string(body[:2048])
 		if htmlSnippet == "" {
-			resultChan <- AnalyzerResponse{err: fmt.Errorf("empty HTML snippet")}
+			resultChan <- AnalyzerResponse{err: errors.New("empty HTML snippet")}
 			return
 		}
 
@@ -118,6 +119,11 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 		defer wg.Done()
 		links := make([]Link, 0)
 		getLinks(rootNode, pageUrl, &links)
+
+		if len(links) == 0 {
+			resultChan <- AnalyzerResponse{err: errors.New("No links available")}
+			return
+		}
 
 		linkChan := make(chan *Link, len(links))
 		var linkWg sync.WaitGroup

@@ -59,9 +59,32 @@
             for (const error of data.Errors) {
                 errorsHtml += `<li> ${error} </li>`;
             }
+
+            console.log(data.Links + "asdadasda")
+            let linksHtml = "";
+            if (data.Links ) {
+                linksHtml += `<table border="1" style="border-collapse: collapse; width: 100%;">`+
+                    `<thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>URL</th>
+                            <th>Accessible</th>
+                        </tr>
+                    </thead>` +
+                    `<tbody>
+                        ${data.Links.map(link => `
+                            <tr>
+                                <td>${link.LinkType}</td>
+                                <td><a href="${link.LinkUrl}" target="_blank">${link.LinkUrl}</a></td>
+                                <td>${link.Accessible ? "Yes" : "No"}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>` +
+                `</table>`
+            } 
+
     
             resultEl.innerHTML = `
-
                 <h3>Analysis Result for URL: <strong>${url}</strong></h3>
                 <p><strong>Html Version:</strong> ${data.HtmlVersion}</p>
                 <p><strong>Title:</strong> ${data.PageTitle}</p>
@@ -69,29 +92,12 @@
                 <ul>${headingsHtml}</ul>
                 <p><strong>Links:</strong></p>
                 <ul>
-                    <table border="1" style="border-collapse: collapse; width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>URL</th>
-                                <th>Accessible</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.Links.map(link => `
-                                <tr>
-                                    <td>${link.LinkType}</td>
-                                    <td><a href="${link.LinkUrl}" target="_blank">${link.LinkUrl}</a></td>
-                                    <td>${link.Accessible ? "Yes" : "No"}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                   ${linksHtml}
                 </ul>
                 <p><strong>Has a Login Form:</strong> ${data.HasLoginForm ? "Yes" : "No"}</p>
 
                 <div style="color: red">
-                    <p><strong>Errors:</strong></p>
+                    <p><strong>Comments:</strong></p>
                     <ul>${errorsHtml}</ul>
                 </div>
             `;
