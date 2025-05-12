@@ -14,7 +14,6 @@ type Handler struct {
 
 func Init(port string) Handler {
 	r := gin.Default()
-	r.SetTrustedProxies([]string{}) // disables trusting proxies, no warning
 
 	route := Handler{
 		Engine: r,
@@ -37,7 +36,7 @@ func (e Handler) Run() error {
 }
 
 func (e Handler) setupRoutes() {
-	// e.Engine.LoadHTMLGlob("web/*.html")
+	e.Engine.LoadHTMLGlob("web/*.html")
 
 	e.Engine.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{})

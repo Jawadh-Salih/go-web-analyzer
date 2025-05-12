@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,6 +22,8 @@ type AnalyzerResponse struct {
 	Headings     map[string]int // Headings count
 	Links        []Link         // Links
 	HasLoginForm bool           // true if the page has a login form
+	Errors       []string       // Errors encountered during analysis
+	err          error
 }
 
 type Link struct {
@@ -69,31 +72,28 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 		return nil, fmt.Errorf("Invalid response: %s", resp.Header.Get("Content-Type"))
 	}
 
-	htmlStr := string(body)
-
-	rootNode, err := html.Parse(strings.NewReader(htmlStr))
+	rootNode, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %v", err)
 	}
 
-	// printTags(rootNode, 0)
-	// following should be done in parallel
+	// following can be done in parallel
+	// number 5 can be taken into configs based on the different anaylysis we need from the analyzer
+	resultChan := make(chan AnalyzerResponse, 5)
 	var wg sync.WaitGroup
-	var mu sync.Mutex
-	errCh := make(chan error, 1)
 
 	// -   What HTML version has the document?
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		htmlV, err := getHtmlVersion(htmlStr)
-		if err != nil {
-			// put the error in a channel
-			errCh <- err
+		htmlSnippet := "" // string(body[:2048])
+		if htmlSnippet == "" {
+			resultChan <- AnalyzerResponse{err: fmt.Errorf("empty HTML snippet")}
+			return
 		}
-		mu.Lock()
-		result.HtmlVersion = htmlV
-		mu.Unlock()
+
+		htmlV := detectHTMLVersion(htmlSnippet)
+		resultChan <- AnalyzerResponse{HtmlVersion: htmlV}
 	}()
 
 	// -   What is the page title?
@@ -101,10 +101,7 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 	go func() {
 		defer wg.Done()
 		title := getTitle(rootNode)
-
-		mu.Lock()
-		result.PageTitle = title
-		mu.Unlock()
+		resultChan <- AnalyzerResponse{PageTitle: title}
 	}()
 
 	// -   How many headings of what level are in the document?
@@ -114,9 +111,7 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 		headings := make(map[string]int)
 		headingsMap(rootNode, headings)
 
-		mu.Lock()
-		result.Headings = headings
-		mu.Unlock()
+		resultChan <- AnalyzerResponse{Headings: headings}
 	}()
 
 	// -   How many internal and external links are in the document? Are there any inaccessible links and how many?
@@ -126,27 +121,44 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 		links := make([]Link, 0)
 		getLinks(rootNode, pageUrl, &links)
 
-		mu.Lock()
-		result.Links = links
-		mu.Unlock()
+		resultChan <- AnalyzerResponse{Links: links}
 	}()
 
 	// -   Does the page contain a login form?
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
 		var pwdField, submitButton bool
 		loginForm := hasLoginForm(rootNode, &pwdField, &submitButton)
-
-		fmt.Println("Login form: ", pwdField, submitButton)
-		mu.Lock()
-		result.HasLoginForm = loginForm
-		mu.Unlock()
+		resultChan <- AnalyzerResponse{HasLoginForm: loginForm}
 	}()
 
-	wg.Wait()
-	close(errCh)
+	// Close the result channel after all goroutines are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	for res := range resultChan {
+		if res.err != nil {
+			result.Errors = append(result.Errors, res.err.Error())
+			continue
+		} else {
+			if res.HtmlVersion != "" {
+				result.HtmlVersion = res.HtmlVersion
+			}
+			if res.PageTitle != "" {
+				result.PageTitle = res.PageTitle
+			}
+			if len(res.Headings) > 0 {
+				result.Headings = res.Headings
+			}
+			if len(res.Links) > 0 {
+				result.Links = append(result.Links, res.Links...)
+			}
+		}
+	}
+
 	// Here you would implement the logic to analyze the URL.
 	// check if you can access the url.
 	// check if the url is reachable.

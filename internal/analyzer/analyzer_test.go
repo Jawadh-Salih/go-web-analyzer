@@ -15,7 +15,7 @@ func TestAnalyze_EmptyUrl(t *testing.T) {
 	response, err := Analyze(request)
 
 	assert.Error(t, err)
-	assert.Equal(t, "empty URL", err.Error())
+	assert.Equal(t, "invalid URL: ", err.Error())
 	assert.Nil(t, response)
 }
 

@@ -41,6 +41,7 @@
     
             const data = await res.json();
     
+            console.log(data);
             if (!res.ok) {
                 errorEl.textContent = data.error || "Something went wrong";
                 return;
@@ -49,13 +50,49 @@
             // Build HTML with template literals
             let headingsHtml = "";
             for (const level in data.Headings) {
-                headingsHtml += `<li>H${level}: ${data.Headings[level]}</li>`;
+                headingsHtml += `<li> ${level} : ${data.Headings[level]}</li>`;
+            }
+
+            // Build HTML with template literals
+            let errorsHtml = "";
+            for (const error of data.Errors) {
+                errorsHtml += `<li> ${error} </li>`;
             }
     
             resultEl.innerHTML = `
 
-                <h3>Analysis Result for URL: <strong>${data.Data}</strong></h3>
-                
+                <h3>Analysis Result for URL: <strong>${url}</strong></h3>
+                <p><strong>Html Version:</strong> ${data.HtmlVersion}</p>
+                <p><strong>Title:</strong> ${data.PageTitle}</p>
+                <p><strong>Headings:</strong></p>
+                <ul>${headingsHtml}</ul>
+                <p><strong>Links:</strong></p>
+                <ul>
+                    <table border="1" style="border-collapse: collapse; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>URL</th>
+                                <th>Accessible</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.Links.map(link => `
+                                <tr>
+                                    <td>${link.LinkType}</td>
+                                    <td><a href="${link.LinkUrl}" target="_blank">${link.LinkUrl}</a></td>
+                                    <td>${link.Accessible ? "Yes" : "No"}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </ul>
+                <p><strong>Has a Login Form:</strong> ${data.HasLoginForm ? "Yes" : "No"}</p>
+
+                <div style="color: red">
+                    <p><strong>Errors:</strong></p>
+                    <ul>${errorsHtml}</ul>
+                </div>
             `;
     
             resultEl.style.display = "block";

@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,21 +24,6 @@ func validateURL(raw string) (*url.URL, error) {
 	}
 
 	return parsed, nil
-}
-
-func getHtmlVersion(resp string) (string, error) {
-	// Read first 2048 bytes (enough to catch the DOCTYPE) for Optimization
-	buf := make([]byte, 2048)
-	node, err := strings.NewReader(resp).Read(buf)
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-	if node == 0 {
-		return "", fmt.Errorf("empty response")
-	}
-
-	htmlSnippet := string(buf[:node])
-	return detectHTMLVersion(htmlSnippet), nil
 }
 
 func detectHTMLVersion(htmlStr string) string {
@@ -118,16 +102,23 @@ func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) {
 					continue
 				}
 
+				fmt.Println("Link: ", linkUrl)
+
 				// If the link is relative, resolve it to an absolute URL
 				if !linkUrl.IsAbs() {
 					linkUrl = baseUrl.ResolveReference(linkUrl)
 				}
 
-				resp, err := http.Get(linkUrl.Host)
+				fmt.Println("Link: ", linkUrl)
+
+				// this can be run in parallel
+				// put the urls in a buffered channel and consume then with http.Get()
+				// check if the link is accessible
+				resp, err := http.Get(linkUrl.String())
 
 				*links = append(*links, Link{
 					LinkType:   getLinkType(linkUrl, baseUrl),
-					LinkUrl:    linkUrl.Host,
+					LinkUrl:    linkUrl.String(),
 					Accessible: (err == nil) && (resp.StatusCode >= 200 && resp.StatusCode < 300),
 				})
 
@@ -142,7 +133,7 @@ func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) {
 
 func getLinkType(linkURL, baseURL *url.URL) string {
 	// Check if the domain of the link matches the base URL
-	if linkURL.Host == baseURL.Host || strings.HasPrefix(linkURL.Path, "/") {
+	if linkURL.Host == baseURL.Host {
 		return "internal"
 	}
 
