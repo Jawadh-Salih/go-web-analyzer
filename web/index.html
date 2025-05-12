@@ -55,6 +55,7 @@
 
             // Build HTML with template literals
             let errorsHtml = "";
+            console.log(data.Errors);
             for (const error of data.Errors) {
                 errorsHtml += `<li> ${error} </li>`;
             }

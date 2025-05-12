@@ -1,16 +1,18 @@
 package main
 
 import (
-	"github.com/Jawadh-Salih/go-web-analyzer/internal/router"
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/server"
 )
 
 func main() {
-	engine := router.Init(":8080")
+	// enable logging and inject here.
+	logger := logger.New()
 
-	err := engine.Run()
-	if err != nil {
-		// handle this gracefully later
-		panic(err)
+	svr := server.New(":8080", logger)
+	logger.Info("Starting server...", "addr", ":8080")
+
+	if err := svr.Start(); err != nil {
+		logger.Error("Server failed", "error", err)
 	}
-
 }

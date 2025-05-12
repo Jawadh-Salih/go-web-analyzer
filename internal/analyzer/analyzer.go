@@ -2,8 +2,10 @@ package analyzer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -33,26 +35,22 @@ type Link struct {
 
 }
 
-func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
-	// check if there is internet connection.
-	// Here you would implement the logic to check for internet connection.
-	// This is a placeholder implementation.
-
-	result := AnalyzerResponse{}
+func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {
+	result := AnalyzerResponse{
+		Errors: make([]string, 0),
+	}
 
 	pageUrl, err := validateURL(request.Url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %s", request.Url)
 	}
 
-	// all of these can be done using go concurrency parallely
+	// TODO Timeouts to be configured
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	req, _ := http.NewRequest("GET", request.Url, nil)
-
-	resp, err := client.Do(req)
+	resp, err := client.Get(request.Url)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +84,7 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		htmlSnippet := "" // string(body[:2048])
+		htmlSnippet := string(body[:2048])
 		if htmlSnippet == "" {
 			resultChan <- AnalyzerResponse{err: fmt.Errorf("empty HTML snippet")}
 			return
@@ -121,6 +119,26 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 		links := make([]Link, 0)
 		getLinks(rootNode, pageUrl, &links)
 
+		linkChan := make(chan *Link, len(links))
+		var linkWg sync.WaitGroup
+
+		workers := int(math.Sqrt(float64(len(links))) * 3)
+		for i := 0; i < workers; i++ {
+			// now pass the link channel to
+			linkWg.Add(1)
+			// consider using context
+			go checkLink(linkChan, &linkWg)
+
+		}
+
+		// feed the links to the linkChan
+		for i := range links {
+			linkChan <- &links[i]
+		}
+
+		close(linkChan)
+
+		linkWg.Wait()
 		resultChan <- AnalyzerResponse{Links: links}
 	}()
 
@@ -158,10 +176,6 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 			}
 		}
 	}
-
-	// Here you would implement the logic to analyze the URL.
-	// check if you can access the url.
-	// check if the url is reachable.
 
 	return &result, nil
 }
