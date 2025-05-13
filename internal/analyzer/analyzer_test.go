@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,8 +12,8 @@ import (
 func TestAnalyze_EmptyUrl(t *testing.T) {
 	// Test with an empty URL
 	request := AnalyzerRequest{Url: ""}
-	ctx := context.Background()
-	response, err := Analyze(ctx, request)
+
+	response, err := Analyze(request)
 
 	assert.Error(t, err)
 	assert.Equal(t, "invalid URL: ", err.Error())
@@ -25,8 +24,7 @@ func TestAnalyze_InvalidUrl(t *testing.T) {
 	// Test with an invalid URL
 	request := AnalyzerRequest{Url: "invalid-url"}
 
-	ctx := context.Background()
-	response, err := Analyze(ctx, request)
+	response, err := Analyze(request)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid URL: invalid-url", err.Error())
 	assert.Nil(t, response)
@@ -43,8 +41,7 @@ func TestAnalyze_UnreachableUrl(t *testing.T) {
 	// Test with a URL that times out
 	request := AnalyzerRequest{Url: testServer.URL} // Assuming this port is closed
 
-	ctx := context.Background()
-	response, err := Analyze(ctx, request)
+	response, err := Analyze(request)
 	assert.Error(t, err)
 	assert.Equal(
 		t,
@@ -66,7 +63,6 @@ func TestAnalyze_ValidUrl_InvalidContent(t *testing.T) {
 		{"text/plain", []byte("This is plain text, not HTML."), "text/plain"},
 	}
 
-	ctx := context.Background()
 	for _, ct := range contentTypes {
 		t.Run(ct.contentType, func(t *testing.T) {
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +74,7 @@ func TestAnalyze_ValidUrl_InvalidContent(t *testing.T) {
 
 			request := AnalyzerRequest{Url: testServer.URL}
 
-			response, err := Analyze(ctx, request)
+			response, err := Analyze(request)
 			assert.Error(t, err)
 			assert.Equal(
 				t,
@@ -100,8 +96,7 @@ func TestAnalyze_ValidUrl_UnknownHtmlVersion(t *testing.T) {
 	// Test with a valid URL
 	request := AnalyzerRequest{Url: testServer.URL}
 
-	ctx := context.Background()
-	response, err := Analyze(ctx, request)
+	response, err := Analyze(request)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, "Unknown", response.HtmlVersion)
@@ -120,8 +115,7 @@ func TestAnalyze_ValidUrl_Html5Version(t *testing.T) {
 	// Test with a valid URL
 	request := AnalyzerRequest{Url: testServer.URL}
 
-	ctx := context.Background()
-	response, err := Analyze(ctx, request)
+	response, err := Analyze(request)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, "HTML5", response.HtmlVersion)

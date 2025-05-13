@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -36,7 +35,7 @@ type Link struct {
 
 }
 
-func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {
+func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 	result := AnalyzerResponse{
 		Errors: make([]string, 0),
 	}

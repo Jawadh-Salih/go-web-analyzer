@@ -47,7 +47,7 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := analyzer.Analyze(c.Request.Context(), req)
+	result, err := analyzer.Analyze(req)
 	if err != nil {
 		s.logger.Error("Internal Server Error", slog.Any("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
