@@ -8,7 +8,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -35,14 +34,6 @@ type Link struct {
 	LinkUrl    string // url
 	Accessible bool   // true if the link is inaccessible
 
-}
-
-type IAnalyzer interface {
-	HtmlVersion(htmlStr string) string
-	PageTitle(node *html.Node) string
-	HeadingsInfo(node *html.Node, headings map[string]int)
-	LinksInfo(node *html.Node, pageUrl *url.URL, links *[]Link)
-	LoginFormExist(node *html.Node, pwdField, submitButton *bool) bool
 }
 
 func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {

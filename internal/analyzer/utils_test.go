@@ -17,6 +17,7 @@ func TestHtmlVersions(t *testing.T) {
 		{content: "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>HTML 4.01 Transitional</title></head><body></body></html>", version: "HTML 4.01 Transitional"},
 		{content: "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><title>XHTML 1.0 Transitional</title></head><body></body></html>", version: "XHTML 1.0 Transitional"},
 		{content: "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"><html><head><title>XHTML 1.0 Strict</title></head><body></body></html>", version: "XHTML 1.0 Strict"},
+		{content: "<html></title></head><body></body></html>", version: "Unknown"},
 	}
 
 	for _, ct := range htmls {

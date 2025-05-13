@@ -6,6 +6,7 @@ import (
 
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func (s *Server) setupMiddleware() {
@@ -30,6 +31,9 @@ func (s *Server) registerRoutes(withTemplates bool) {
 	})
 
 	s.router.POST("/analyze", s.analyzeHandler)
+
+	// Observability
+	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 }
 
 func (s *Server) analyzeHandler(c *gin.Context) {

@@ -28,9 +28,7 @@ func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultC
 	// Following is a equation I recognize from what I saw on the internet
 	workers := int(math.Sqrt(float64(len(links))) * 3)
 	for i := 0; i < workers; i++ {
-		// now pass the link channel to
 		linkWg.Add(1)
-		// consider using context
 		go checkLink(linkChan, &linkWg)
 	}
 
