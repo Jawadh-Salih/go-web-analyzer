@@ -1,5 +1,4 @@
 # Makefile for Go Web Analyzer
-# Define the application name and directories
 APP_NAME := go-web-analyzer
 BUILD_DIR := ./build
 SRC_DIR := ./cmd
@@ -9,9 +8,6 @@ GO_FILES := $(shell find $(SRC_DIR) -type f -name '*.go')
 DOCKER_IMAGE := $(APP_NAME):latest
 DOCKER_PORT := 8080
 
-.PHONY: all build run test clean docker-build docker-run
-
-all: build
 
 build: $(GO_FILES)
 	@echo "Building the application..."
@@ -29,6 +25,10 @@ test:
 coverage:
 	@echo "Running tests with coverage..."
 	@go test ./... -coverprofile=coverage.out
+
+coverage-html:
+	@echo "Generating coverage report..."
+	@go tool cover -html=coverage.out -o coverage.html
 
 clean:
 	@echo "Cleaning up..."
