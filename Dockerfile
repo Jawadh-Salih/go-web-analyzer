@@ -1,5 +1,5 @@
 # Start from the official Golang base image
-FROM golang:1.21-alpine
+FROM golang:1.24-alpine
 
 # Set environment variables
 ENV GO111MODULE=on
