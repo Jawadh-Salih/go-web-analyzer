@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,14 @@ type Link struct {
 	LinkUrl    string // url
 	Accessible bool   // true if the link is inaccessible
 
+}
+
+type IAnalyzer interface {
+	HtmlVersion(htmlStr string) string
+	PageTitle(node *html.Node) string
+	HeadingsInfo(node *html.Node, headings map[string]int)
+	LinksInfo(node *html.Node, pageUrl *url.URL, links *[]Link)
+	LoginFormExist(node *html.Node, pwdField, submitButton *bool) bool
 }
 
 func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {
@@ -82,7 +91,7 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	var wg sync.WaitGroup
 
 	// -   What HTML version has the document?
-	wg.Add(1)
+	wg.Add(5)
 	go func() {
 		defer wg.Done()
 		buffer := int(math.Min(float64(len(body)), 2048))
@@ -97,66 +106,16 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	}()
 
 	// -   What is the page title?
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		title := getTitle(rootNode)
-		resultChan <- AnalyzerResponse{PageTitle: title}
-	}()
+	go ExtractTitle(rootNode, &wg, resultChan)
 
 	// -   How many headings of what level are in the document?
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		headings := make(map[string]int)
-		headingsMap(rootNode, headings)
-
-		resultChan <- AnalyzerResponse{Headings: headings}
-	}()
+	go ExtractHeadings(rootNode, &wg, resultChan)
 
 	// -   How many internal and external links are in the document? Are there any inaccessible links and how many?
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		links := make([]Link, 0)
-		getLinks(rootNode, pageUrl, &links)
-
-		if len(links) == 0 {
-			resultChan <- AnalyzerResponse{err: errors.New("No links available")}
-			return
-		}
-
-		linkChan := make(chan *Link, len(links))
-		var linkWg sync.WaitGroup
-
-		workers := int(math.Sqrt(float64(len(links))) * 3)
-		for i := 0; i < workers; i++ {
-			// now pass the link channel to
-			linkWg.Add(1)
-			// consider using context
-			go checkLink(linkChan, &linkWg)
-
-		}
-
-		// feed the links to the linkChan
-		for i := range links {
-			linkChan <- &links[i]
-		}
-
-		close(linkChan)
-
-		linkWg.Wait()
-		resultChan <- AnalyzerResponse{Links: links}
-	}()
+	go ExtrackLinks(rootNode, pageUrl, &wg, resultChan)
 
 	// -   Does the page contain a login form?
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		var pwdField, submitButton bool
-		loginForm := hasLoginForm(rootNode, &pwdField, &submitButton)
-		resultChan <- AnalyzerResponse{HasLoginForm: loginForm}
-	}()
+	go ExtractLoginForm(rootNode, &wg, resultChan)
 
 	// Close the result channel after all goroutines are done
 	go func() {
