@@ -7,6 +7,7 @@ import (
 )
 
 func validateURL(raw string) (*url.URL, error) {
+	// TODO a regex to validate the URL
 	if raw == "" {
 		return nil, fmt.Errorf("empty URL")
 	}
