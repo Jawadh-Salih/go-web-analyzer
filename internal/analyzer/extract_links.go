@@ -45,7 +45,7 @@ func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultC
 
 func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) {
 	// should check for href attribute
-	if node.Type == html.ElementNode && (node.Data == "a" || node.Data == "link") {
+	if node.Type == html.ElementNode && node.Data == "a" {
 		for _, attr := range node.Attr {
 			if attr.Key == "href" {
 				// we have a link now.

@@ -30,6 +30,10 @@ coverage-html:
 	@echo "Generating coverage report..."
 	@go tool cover -html=coverage.out -o coverage.html
 
+coverage-html-open: coverage
+	@echo "Generating coverage report..."
+	@go tool cover -html=coverage.out
+
 clean:
 	@echo "Cleaning up..."
 	@rm -rf $(BUILD_DIR)

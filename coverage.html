@@ -1,0 +1,705 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/Jawadh-Salih/go-web-analyzer/cmd/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/analyzer.go (86.3%)</option>
+				
+				<option value="file2">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/extract_headings.go (70.0%)</option>
+				
+				<option value="file3">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/extract_links.go (22.5%)</option>
+				
+				<option value="file4">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/extract_login_form.go (50.0%)</option>
+				
+				<option value="file5">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/extract_title.go (100.0%)</option>
+				
+				<option value="file6">github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer/utils.go (89.5%)</option>
+				
+				<option value="file7">github.com/Jawadh-Salih/go-web-analyzer/internal/logger/logger.go (0.0%)</option>
+				
+				<option value="file8">github.com/Jawadh-Salih/go-web-analyzer/internal/server/router.go (33.3%)</option>
+				
+				<option value="file9">github.com/Jawadh-Salih/go-web-analyzer/internal/server/server.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "os"
+        "os/signal"
+        "time"
+
+        "github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
+        "github.com/Jawadh-Salih/go-web-analyzer/internal/server"
+)
+
+func main() <span class="cov0" title="0">{
+        // enable logging and inject here.
+        logger := logger.New()
+
+        svr := server.New(":8080", logger, true)
+        logger.Info("Starting server...", "addr", ":8080")
+
+        go func() </span><span class="cov0" title="0">{
+                if err := svr.Start(); err != nil </span><span class="cov0" title="0">{
+                        logger.Error("Server failed", "error", err)
+                        os.Exit(1)
+                }</span>
+        }()
+
+        <span class="cov0" title="0">done := make(chan os.Signal, 1)
+        signal.Notify(done, os.Interrupt)
+        &lt;-done
+
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+        if err := svr.Stop(ctx); err != nil </span><span class="cov0" title="0">{
+                logger.Error("Server shutdown failed", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">logger.Info("Server stopped gracefully")</span>
+
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package analyzer
+
+import (
+        "bytes"
+        "errors"
+        "fmt"
+        "io"
+        "math"
+        "net/http"
+        "strings"
+        "sync"
+        "time"
+
+        "golang.org/x/net/html"
+)
+
+// This will analyze the request url.
+type AnalyzerRequest struct {
+        Url string
+}
+type AnalyzerResponse struct {
+        HtmlVersion  string         // HTML version
+        PageTitle    string         // Page title
+        Headings     map[string]int // Headings count
+        Links        []Link         // Links
+        HasLoginForm bool           // true if the page has a login form
+        Errors       []string       // Errors encountered during analysis
+        err          error
+}
+
+type Link struct {
+        LinkType   string // internal or external
+        LinkUrl    string // url
+        Accessible bool   // true if the link is inaccessible
+
+}
+
+func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) <span class="cov8" title="1">{
+        result := AnalyzerResponse{
+                Errors: make([]string, 0),
+        }
+
+        pageUrl, err := validateURL(request.Url)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid URL: %s", request.Url)
+        }</span>
+
+        // TODO Timeouts to be configured
+        <span class="cov8" title="1">client := http.Client{
+                Timeout: 5 * time.Second,
+        }
+
+        resp, err := client.Get(request.Url)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">defer resp.Body.Close()
+        if resp.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to reach the URL: %s with status code %d", request.Url, resp.StatusCode)
+        }</span>
+
+        <span class="cov8" title="1">body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to read response body: %v", err)
+        }</span>
+
+        // check for html content type
+        <span class="cov8" title="1">if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("Invalid response: %s", resp.Header.Get("Content-Type"))
+        }</span>
+
+        <span class="cov8" title="1">rootNode, err := html.Parse(bytes.NewReader(body))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to parse HTML: %v", err)
+        }</span>
+
+        // following can be done in parallel
+        // number 5 can be taken into configs based on the different anaylysis we need from the analyzer
+        <span class="cov8" title="1">resultChan := make(chan AnalyzerResponse, 5)
+        var wg sync.WaitGroup
+
+        // -   What HTML version has the document?
+        wg.Add(5)
+        go func() </span><span class="cov8" title="1">{
+                defer wg.Done()
+                buffer := int(math.Min(float64(len(body)), 2048))
+                htmlSnippet := string(body[:buffer])
+                if htmlSnippet == "" </span><span class="cov0" title="0">{
+                        resultChan &lt;- AnalyzerResponse{err: errors.New("empty HTML snippet")}
+                        return
+                }</span>
+
+                <span class="cov8" title="1">htmlV := detectHTMLVersion(htmlSnippet)
+                resultChan &lt;- AnalyzerResponse{HtmlVersion: htmlV}</span>
+        }()
+
+        // -   What is the page title?
+        <span class="cov8" title="1">go ExtractTitle(rootNode, &amp;wg, resultChan)
+
+        // -   How many headings of what level are in the document?
+        go ExtractHeadings(rootNode, &amp;wg, resultChan)
+
+        // -   How many internal and external links are in the document? Are there any inaccessible links and how many?
+        go ExtrackLinks(rootNode, pageUrl, &amp;wg, resultChan)
+
+        // -   Does the page contain a login form?
+        go ExtractLoginForm(rootNode, &amp;wg, resultChan)
+
+        // Close the result channel after all goroutines are done
+        go func() </span><span class="cov8" title="1">{
+                wg.Wait()
+                close(resultChan)
+        }</span>()
+
+        <span class="cov8" title="1">for res := range resultChan </span><span class="cov8" title="1">{
+                if res.err != nil </span><span class="cov8" title="1">{
+                        result.Errors = append(result.Errors, res.err.Error())
+                        continue</span>
+                } else<span class="cov8" title="1"> {
+                        if res.HtmlVersion != "" </span><span class="cov8" title="1">{
+                                result.HtmlVersion = res.HtmlVersion
+                        }</span>
+                        <span class="cov8" title="1">if res.PageTitle != "" </span><span class="cov8" title="1">{
+                                result.PageTitle = res.PageTitle
+                        }</span>
+                        <span class="cov8" title="1">if len(res.Headings) &gt; 0 </span><span class="cov0" title="0">{
+                                result.Headings = res.Headings
+                        }</span>
+                        <span class="cov8" title="1">if len(res.Links) &gt; 0 </span><span class="cov0" title="0">{
+                                result.Links = append(result.Links, res.Links...)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">return &amp;result, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package analyzer
+
+import (
+        "sync"
+
+        "golang.org/x/net/html"
+)
+
+func ExtractHeadings(root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) <span class="cov8" title="1">{
+        defer wg.Done()
+
+        headingCounts := make(map[string]int)
+
+        // Traverse the HTML node tree and count headings
+        headingsMap(root, headingCounts)
+
+        // Send the result to the channel
+        resultChan &lt;- AnalyzerResponse{Headings: headingCounts}
+}</span>
+
+func headingsMap(node *html.Node, headingCounts map[string]int) <span class="cov8" title="1">{
+        // Check if the node is an element node and is a heading tag (h1 to h6)
+        if node.Type == html.ElementNode &amp;&amp; node.Data[0] == 'h' &amp;&amp; len(node.Data) == 2 </span><span class="cov0" title="0">{
+                level := node.Data[1] - '0' // Convert 'h1' to level 1, 'h2' to level 2, etc.
+                if level &gt;= 1 &amp;&amp; level &lt;= 6 </span><span class="cov0" title="0">{
+                        headingCounts[node.Data]++
+                }</span>
+        }
+
+        // Recursively traverse the child nodes
+        <span class="cov8" title="1">for c := node.FirstChild; c != nil; c = c.NextSibling </span><span class="cov8" title="1">{
+                headingsMap(c, headingCounts)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package analyzer
+
+import (
+        "errors"
+        "fmt"
+        "math"
+        "net/http"
+        "net/url"
+        "sync"
+        "time"
+
+        "golang.org/x/net/html"
+)
+
+func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) <span class="cov8" title="1">{
+        defer wg.Done()
+        links := make([]Link, 0)
+        getLinks(root, pageUrl, &amp;links)
+
+        if len(links) == 0 </span><span class="cov8" title="1">{
+                resultChan &lt;- AnalyzerResponse{err: errors.New("No links available")}
+                return
+        }</span>
+
+        <span class="cov0" title="0">linkChan := make(chan *Link, len(links))
+        var linkWg sync.WaitGroup
+
+        // Following is a equation I recognize from what I saw on the internet
+        workers := int(math.Sqrt(float64(len(links))) * 3)
+        for i := 0; i &lt; workers; i++ </span><span class="cov0" title="0">{
+                linkWg.Add(1)
+                go checkLink(linkChan, &amp;linkWg)
+        }</span>
+
+        // feed the links to the linkChan
+        <span class="cov0" title="0">for i := range links </span><span class="cov0" title="0">{
+                linkChan &lt;- &amp;links[i]
+        }</span>
+
+        <span class="cov0" title="0">close(linkChan)
+
+        linkWg.Wait()
+        resultChan &lt;- AnalyzerResponse{Links: links}</span>
+}
+
+func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) <span class="cov8" title="1">{
+        // should check for href attribute
+        if node.Type == html.ElementNode &amp;&amp; (node.Data == "a" || node.Data == "link") </span><span class="cov0" title="0">{
+                for _, attr := range node.Attr </span><span class="cov0" title="0">{
+                        if attr.Key == "href" </span><span class="cov0" title="0">{
+                                // we have a link now.
+                                linkUrl, err := url.Parse(attr.Val)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        fmt.Println("Error on parse ", err)
+                                        continue</span>
+                                }
+
+                                // If the link is relative, resolve it to an absolute URL
+                                <span class="cov0" title="0">if !linkUrl.IsAbs() </span><span class="cov0" title="0">{
+                                        linkUrl = baseUrl.ResolveReference(linkUrl)
+                                }</span>
+
+                                // checking the accessibility of the link can be run in parallel
+                                // so it will be implemented once we have all the links extracted
+
+                                <span class="cov0" title="0">*links = append(*links, Link{
+                                        LinkType: getLinkType(linkUrl, baseUrl),
+                                        LinkUrl:  linkUrl.String(),
+                                })</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">for child := node.FirstChild; child != nil; child = child.NextSibling </span><span class="cov8" title="1">{
+                getLinks(child, baseUrl, links)
+        }</span>
+}
+
+func getLinkType(linkURL, baseURL *url.URL) string <span class="cov0" title="0">{
+        // Check if the domain of the link matches the base URL
+        if linkURL.Host == baseURL.Host </span><span class="cov0" title="0">{
+                return "internal"
+        }</span>
+
+        <span class="cov0" title="0">return "external"</span>
+}
+
+func checkLink(links &lt;-chan *Link, wg *sync.WaitGroup) <span class="cov0" title="0">{
+        defer wg.Done()
+
+        for link := range links </span><span class="cov0" title="0">{
+                client := &amp;http.Client{Timeout: 3 * time.Second}
+
+                resp, err := client.Head(link.LinkUrl)
+                if err != nil </span><span class="cov0" title="0">{
+                        // log the error
+                        link.Accessible = false
+                        // logger.Error("Error fetching URL", "worker_id", id, "url", link.LinkUrl, "error", err)
+                }</span> else<span class="cov0" title="0"> {
+                        link.Accessible = resp.StatusCode == 200
+                        defer resp.Body.Close()
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package analyzer
+
+import (
+        "sync"
+
+        "golang.org/x/net/html"
+)
+
+func ExtractLoginForm(root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) <span class="cov8" title="1">{
+        defer wg.Done()
+
+        var pwdField, submitButton bool
+        loginForm := hasLoginForm(root, &amp;pwdField, &amp;submitButton)
+        resultChan &lt;- AnalyzerResponse{HasLoginForm: loginForm}
+}</span>
+
+func hasLoginForm(node *html.Node, hasPasswordField, hasSubmitButton *bool) bool <span class="cov8" title="1">{
+        // if the node data is input check if the input type is password and submit
+
+        // if we can find these 2 info then
+        if node.Type == html.ElementNode &amp;&amp; node.Data == "input" </span><span class="cov0" title="0">{
+                for _, attr := range node.Attr </span><span class="cov0" title="0">{
+                        if attr.Key == "type" &amp;&amp; attr.Val == "password" </span><span class="cov0" title="0">{
+                                *hasPasswordField = true
+                        }</span>
+
+                        <span class="cov0" title="0">if attr.Key == "type" &amp;&amp; (attr.Val == "submit" || attr.Val == "button") </span><span class="cov0" title="0">{
+                                *hasSubmitButton = true
+                        }</span>
+                }
+
+                <span class="cov0" title="0">if *hasPasswordField &amp;&amp; *hasSubmitButton </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+        }
+
+        // recursively check for child nodes
+        <span class="cov8" title="1">for child := node.FirstChild; child != nil; child = child.NextSibling </span><span class="cov8" title="1">{
+                if hasLoginForm(child, hasPasswordField, hasSubmitButton) </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+        }
+
+        <span class="cov8" title="1">return *hasPasswordField &amp;&amp; *hasSubmitButton</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package analyzer
+
+import (
+        "sync"
+
+        "golang.org/x/net/html"
+)
+
+func ExtractTitle(root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) <span class="cov8" title="1">{
+        defer wg.Done()
+
+        title := getTitle(root)
+        resultChan &lt;- AnalyzerResponse{PageTitle: title}
+}</span>
+
+func getTitle(node *html.Node) string <span class="cov8" title="1">{
+        if node.Type == html.ElementNode &amp;&amp; node.Data == "title" </span><span class="cov8" title="1">{
+                for child := node.FirstChild; child != nil; child = child.NextSibling </span><span class="cov8" title="1">{
+                        if child.Type == html.TextNode </span><span class="cov8" title="1">{
+                                return child.Data
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">for child := node.FirstChild; child != nil; child = child.NextSibling </span><span class="cov8" title="1">{
+                if title := getTitle(child); title != "" </span><span class="cov8" title="1">{
+                        return title
+                }</span>
+
+        }
+
+        <span class="cov8" title="1">return ""</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package analyzer
+
+import (
+        "fmt"
+        "net/url"
+        "regexp"
+        "strings"
+)
+
+func validateURL(raw string) (*url.URL, error) <span class="cov8" title="1">{
+        // TODO a regex to validate the URL
+        if raw == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("empty URL")
+        }</span>
+
+        <span class="cov8" title="1">urlRegex := regexp.MustCompile(`^(https?:\/\/)?(www\.)?([a-zA-Z0-9_-]+(:[a-zA-Z0-9_-]+)?@)?((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,5})|(\d{1,3}(\.\d{1,3}){3}))(:\d{1,5})?(\/.*)?$`)
+        if !urlRegex.MatchString(raw) </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid URL: %s", raw)
+        }</span>
+
+        <span class="cov8" title="1">parsed, err := url.Parse(raw)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid URL syntax: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if parsed.Scheme == "" || parsed.Host == "" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid URL: missing scheme or host")
+        }</span>
+
+        <span class="cov8" title="1">return parsed, nil</span>
+}
+
+func detectHTMLVersion(htmlStr string) string <span class="cov8" title="1">{
+        lower := strings.ToLower(htmlStr)
+        switch </span>{
+        case strings.Contains(lower, "&lt;!doctype html&gt;"):<span class="cov8" title="1">
+                return "HTML5"</span>
+        case strings.Contains(lower, "&lt;!doctype html public \"-//w3c//dtd html 4.01 transitional//en\""):<span class="cov8" title="1">
+                return "HTML 4.01 Transitional"</span>
+        case strings.Contains(lower, "&lt;!doctype html public \"-//w3c//dtd html 4.01//en\""):<span class="cov8" title="1">
+                return "HTML 4.01 Strict"</span>
+        case strings.Contains(lower, "&lt;!doctype html public \"-//w3c//dtd xhtml 1.0 transitional//en\""):<span class="cov8" title="1">
+                return "XHTML 1.0 Transitional"</span>
+        case strings.Contains(lower, "&lt;!doctype html public \"-//w3c//dtd xhtml 1.0 strict//en\""):<span class="cov8" title="1">
+                return "XHTML 1.0 Strict"</span>
+        default:<span class="cov8" title="1">
+                return "Unknown"</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package logger
+
+import (
+        "log/slog"
+        "os"
+)
+
+func New() *slog.Logger <span class="cov0" title="0">{
+        handler := slog.NewJSONHandler(os.Stdout, &amp;slog.HandlerOptions{
+                Level: slog.LevelInfo,
+        })
+
+        return slog.New(handler)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package server
+
+import (
+        "log/slog"
+        "net/http"
+
+        "github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer"
+        "github.com/gin-gonic/gin"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+func (s *Server) setupMiddleware() <span class="cov8" title="1">{
+        s.router.Use(func(c *gin.Context) </span><span class="cov8" title="1">{
+                s.logger.Info(
+                        "request received",
+                        "method",
+                        c.Request.Method,
+                        "path",
+                        c.Request.URL.Path)
+                c.Next()
+        }</span>)
+}
+
+func (s *Server) registerRoutes(withTemplates bool) <span class="cov8" title="1">{
+        if withTemplates </span><span class="cov0" title="0">{
+                s.router.LoadHTMLGlob("web/*.html")
+        }</span>
+
+        <span class="cov8" title="1">s.router.GET("/", func(c *gin.Context) </span><span class="cov0" title="0">{
+                c.HTML(http.StatusOK, "index.html", gin.H{})
+        }</span>)
+
+        <span class="cov8" title="1">s.router.POST("/analyze", s.analyzeHandler)
+
+        // Observability
+        s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))</span>
+}
+
+func (s *Server) analyzeHandler(c *gin.Context) <span class="cov0" title="0">{
+        var req analyzer.AnalyzerRequest
+        err := c.ShouldBindBodyWithJSON(&amp;req)
+        if err != nil || req.Url == "" </span><span class="cov0" title="0">{
+                s.logger.Error("Invalid request", slog.Any("error", err.Error()))
+                c.JSON(http.StatusBadRequest, gin.H{
+                        "Error": "Invalid request",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">result, err := analyzer.Analyze(req)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.Error("Internal Server Error", slog.Any("error", err.Error()))
+                c.JSON(http.StatusInternalServerError, gin.H{
+                        "Error": "Internal Server Error",
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, result)</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package server
+
+import (
+        "context"
+        "log/slog"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Server struct {
+        port          string
+        logger        *slog.Logger
+        svr           *http.Server
+        router        *gin.Engine
+        withTemplates bool
+}
+
+func New(port string, logger *slog.Logger, withTemplates bool) *Server <span class="cov8" title="1">{
+        gin.SetMode(gin.ReleaseMode)
+
+        r := gin.New()
+        r.Use(gin.Recovery())
+
+        s := &amp;Server{
+                port:   port,
+                router: r,
+                logger: logger,
+        }
+
+        s.setupMiddleware()
+        s.registerRoutes(withTemplates)
+
+        svr := &amp;http.Server{
+                Addr:    port,
+                Handler: r,
+        }
+
+        s.svr = svr
+        return s
+}</span>
+
+func (s *Server) Start() error <span class="cov8" title="1">{
+        return s.router.Run(s.port)
+}</span>
+
+func (s *Server) Stop(ctx context.Context) error <span class="cov8" title="1">{
+        // Implement graceful shutdown logic if needed
+        s.logger.Info("Server is stopping...")
+        return s.svr.Shutdown(ctx)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

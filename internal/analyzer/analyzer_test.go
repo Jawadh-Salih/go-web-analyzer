@@ -2,8 +2,10 @@ package analyzer
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -121,5 +123,59 @@ func TestAnalyze_ValidUrl_Html5Version(t *testing.T) {
 	assert.Equal(t, "HTML5", response.HtmlVersion)
 	assert.Equal(t, "Example Domain", response.PageTitle)
 	assert.Empty(t, response.Headings)
+	assert.Empty(t, response.Links)
+}
+
+func TestAnalyze_ValidUrl_WithLinks(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
+		// read from testdata
+
+		file, err := os.ReadFile("./testdata/extract_links.html")
+		if err != nil {
+			log.Fatalf("Error on file %s", err.Error())
+		}
+
+		w.Write(file)
+	}))
+
+	// Test with a valid URL
+	request := AnalyzerRequest{Url: testServer.URL}
+
+	response, err := Analyze(request)
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.Equal(t, "HTML5", response.HtmlVersion)
+	assert.Equal(t, "Sample Links", response.PageTitle)
+	assert.NotEmpty(t, response.Headings)
+	assert.NotEmpty(t, response.Links)
+}
+
+func TestAnalyze_ValidUrl_WithHeadingss(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
+		// read from testdata
+
+		file, err := os.ReadFile("./testdata/extract_headings.html")
+		if err != nil {
+			log.Fatalf("Error on file %s", err.Error())
+		}
+
+		w.Write(file)
+	}))
+
+	// Test with a valid URL
+	request := AnalyzerRequest{Url: testServer.URL}
+
+	response, err := Analyze(request)
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.Equal(t, "HTML5", response.HtmlVersion)
+	assert.Equal(t, "Sample Links", response.PageTitle)
+	assert.NotEmpty(t, response.Headings)
 	assert.Empty(t, response.Links)
 }
