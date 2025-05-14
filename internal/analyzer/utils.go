@@ -13,9 +13,8 @@ func validateURL(raw string) (*url.URL, error) {
 		return nil, fmt.Errorf("empty URL")
 	}
 
-	urlRegex := regexp.MustCompile(`^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|\/|\/\/)?[A-z0-9_-]*?[:]?[A-z0-9_-]*?[@]?[A-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$
-`)
-	if urlRegex.MatchString(raw) {
+	urlRegex := regexp.MustCompile(`^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|\/|\/\/)?[A-Za-z0-9_-]*:?[A-Za-z0-9_-]*@?((([A-Za-z0-9]+(-[A-Za-z0-9]+)*\.)+[A-Za-z]{2,5})|(\d{1,3}(\.\d{1,3}){3}))(:[0-9]{1,5})?(\/.*)?$`)
+	if !urlRegex.MatchString(raw) {
 		return nil, fmt.Errorf("invalid URL: %s", raw)
 	}
 
