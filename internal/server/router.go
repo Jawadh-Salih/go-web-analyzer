@@ -49,6 +49,8 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 
 	result, err := analyzer.Analyze(req)
 	if err != nil {
+		// cast the error and see if it's an HttpApiError
+		// if not 500, if return the relevant code
 		s.logger.Error("Internal Server Error", slog.Any("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Internal Server Error",

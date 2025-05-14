@@ -3,14 +3,15 @@ package analyzer
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"golang.org/x/net/html"
 )
 
@@ -36,13 +37,16 @@ type Link struct {
 }
 
 func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
+	log := logger.New()
 	result := AnalyzerResponse{
 		Errors: make([]string, 0),
 	}
 
 	pageUrl, err := validateURL(request.Url)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %s", request.Url)
+		log.Error("Invalid URL", slog.Any("Error", err))
+		// 400 should be
+		return nil, err
 	}
 
 	// TODO Timeouts to be configured
@@ -57,22 +61,28 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to reach the URL: %s with status code %d", request.Url, resp.StatusCode)
+		log.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
+		return nil, errors.New("Failed to reach URL")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
+		log.Error("Failed to read response body", slog.Any("error", err))
+		return nil, err
+
 	}
 
 	// check for html content type
 	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
-		return nil, fmt.Errorf("Invalid response: %s", resp.Header.Get("Content-Type"))
+		err := errors.New("Invalid response")
+		log.Error(err.Error(), slog.String("content-type", resp.Header.Get("Content-Type")))
+		return nil, err
 	}
 
 	rootNode, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %v", err)
+		log.Error("failed to parse HTML", slog.Any("error", err))
+		return nil, err
 	}
 
 	// following can be done in parallel
