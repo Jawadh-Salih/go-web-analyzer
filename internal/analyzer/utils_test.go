@@ -11,6 +11,7 @@ func TestUrlValidation(t *testing.T) {
 		url      string
 		expected bool
 	}{
+		{"http://localhost:4200", true},
 		{"http://example.com", true},
 		{"https://example.com", true},
 		{"https://example.com:8080", true},
