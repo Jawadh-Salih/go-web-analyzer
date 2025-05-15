@@ -18,6 +18,8 @@ run: build
 	@echo "Running the application..."
 	@./$(BUILD_DIR)/$(APP_NAME)
 
+clean-run: clean run
+
 test:
 	@echo "Running tests..."
 	@go test ./... -v
