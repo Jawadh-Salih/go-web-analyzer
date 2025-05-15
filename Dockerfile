@@ -13,7 +13,10 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY web/ ./web/
 
+RUN ls -R /app
+
 # Build the binary
+RUN go mod download 
 RUN go build -o webanalyzer ./cmd/main.go
 
 # Expose port
