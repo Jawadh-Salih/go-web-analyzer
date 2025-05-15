@@ -2,7 +2,9 @@ package analyzer
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
@@ -36,16 +39,15 @@ type Link struct {
 
 }
 
-func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
-	log := logger.New()
+func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {
+	logger := logger.FromContext(ctx)
 	result := AnalyzerResponse{
 		Errors: make([]string, 0),
 	}
 
 	pageUrl, err := validateURL(request.Url)
 	if err != nil {
-		log.Error("Invalid URL", slog.Any("Error", err))
-		// 400 should be
+		logger.Error("Invalid URL", slog.Any("Error", err))
 		return nil, err
 	}
 
@@ -61,27 +63,27 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
+		logger.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
 		return nil, errors.New("Failed to reach URL")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("Failed to read response body", slog.Any("error", err))
+		logger.Error("Failed to read response body", slog.Any("error", err))
 		return nil, err
 
 	}
 
 	// check for html content type
 	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
-		err := errors.New("Invalid response")
-		log.Error(err.Error(), slog.String("content-type", resp.Header.Get("Content-Type")))
+		err := fmt.Errorf("Invalid response: %s", resp.Header.Get("Content-Type"))
+		logger.Error(err.Error(), slog.String("content-type", resp.Header.Get("Content-Type")))
 		return nil, err
 	}
 
 	rootNode, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		log.Error("failed to parse HTML", slog.Any("error", err))
+		logger.Error("failed to parse HTML", slog.Any("error", err))
 		return nil, err
 	}
 
@@ -93,29 +95,45 @@ func Analyze(request AnalyzerRequest) (*AnalyzerResponse, error) {
 	// -   What HTML version has the document?
 	wg.Add(5)
 	go func() {
+		startTime := time.Now()
 		defer wg.Done()
 		buffer := int(math.Min(float64(len(body)), 2048))
 		htmlSnippet := string(body[:buffer])
+		status := "Success"
 		if htmlSnippet == "" {
 			resultChan <- AnalyzerResponse{err: errors.New("empty HTML snippet")}
+			status = "Fail"
 			return
 		}
 
 		htmlV := detectHTMLVersion(htmlSnippet)
 		resultChan <- AnalyzerResponse{HtmlVersion: htmlV}
+
+		duration := time.Since(startTime).Seconds()
+		functionName := "HtmlVersion Check"
+		logger.Info("Function Executed",
+			slog.String("function", functionName),
+			slog.String("status", status),
+			slog.Float64("duration", duration),
+		)
+
+		observability.
+			DurationMetrics.
+			WithLabelValues(functionName, status).
+			Observe(duration)
 	}()
 
 	// -   What is the page title?
-	go ExtractTitle(rootNode, &wg, resultChan)
+	go ExtractTitle(logger, rootNode, &wg, resultChan)
 
 	// -   How many headings of what level are in the document?
-	go ExtractHeadings(rootNode, &wg, resultChan)
+	go ExtractHeadings(logger, rootNode, &wg, resultChan)
 
 	// -   How many internal and external links are in the document? Are there any inaccessible links and how many?
-	go ExtrackLinks(rootNode, pageUrl, &wg, resultChan)
+	go ExtrackLinks(logger, rootNode, pageUrl, &wg, resultChan)
 
 	// -   Does the page contain a login form?
-	go ExtractLoginForm(rootNode, &wg, resultChan)
+	go ExtractLoginForm(logger, rootNode, &wg, resultChan)
 
 	// Close the result channel after all goroutines are done
 	go func() {

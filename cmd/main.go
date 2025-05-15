@@ -17,12 +17,10 @@ func main() {
 	svr := server.New(":8080", logger, true)
 	logger.Info("Starting server...", "addr", ":8080")
 
-	go func() {
-		if err := svr.Start(); err != nil {
-			logger.Error("Server failed", "error", err)
-			os.Exit(1)
-		}
-	}()
+	if err := svr.Start(); err != nil {
+		logger.Error("Server failed", "error", err)
+		os.Exit(1)
+	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt)

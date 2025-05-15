@@ -1,7 +1,6 @@
 
 - Ensure crucial Tests are covered. 
 TODO
-    - can we pass the logger into analyzer?
     - Include a prometheous
     - Check Error Handling
 
@@ -95,7 +94,6 @@ Further to this, I had another performance issue on Extracting the Links of the 
 
 ### Future Improvements
 
-- Implement a caching mechanism to store previously analyzed results, reducing redundant processing for frequently analyzed URLs.
 - Enhance the URL accessibility check by adding support for retry logic and handling rate-limiting scenarios.
 - Introduce a configuration file to allow users to customize the analyzer's behavior, such as setting timeouts or enabling/disabling specific features.
 - Improve the user interface by creating a more interactive and visually appealing frontend.

@@ -5,8 +5,10 @@ import (
 	"net/http"
 
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer"
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/xid"
 )
 
 func (s *Server) setupMiddleware() {
@@ -17,6 +19,13 @@ func (s *Server) setupMiddleware() {
 			c.Request.Method,
 			"path",
 			c.Request.URL.Path)
+
+		requestID := c.GetHeader("X-Request-ID")
+		if requestID == "" {
+			requestID = xid.New().String()
+		}
+
+		c.Set("request_id", requestID)
 		c.Next()
 	})
 }
@@ -47,7 +56,10 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := analyzer.Analyze(req)
+	// Should we pass the same logger to the Analyze function?
+	log := s.logger.With(slog.String("request_id", getRequestID(c)))
+	ctx := logger.SetLogger(c.Request.Context(), log)
+	result, err := analyzer.Analyze(ctx, req)
 	if err != nil {
 		// cast the error and see if it's an HttpApiError
 		// if not 500, if return the relevant code
@@ -59,4 +71,13 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func getRequestID(c *gin.Context) string {
+	if val, ok := c.Get("request_id"); ok {
+		if id, ok := val.(string); ok {
+			return id
+		}
+	}
+	return ""
 }

@@ -1,12 +1,18 @@
 package analyzer
 
 import (
+	"log/slog"
 	"sync"
+	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtractHeadings(root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+func ExtractHeadings(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+	start := time.Now()
+	status := "Success"
+	functionName := "ExtractHeadings"
 	defer wg.Done()
 
 	headingCounts := make(map[string]int)
@@ -16,6 +22,16 @@ func ExtractHeadings(root *html.Node, wg *sync.WaitGroup, resultChan chan Analyz
 
 	// Send the result to the channel
 	resultChan <- AnalyzerResponse{Headings: headingCounts}
+	duration := time.Since(start).Seconds()
+	logger.Info("Function Executed",
+		slog.String("function", functionName),
+		slog.Float64("duration", duration),
+	)
+
+	observability.
+		DurationMetrics.
+		WithLabelValues(functionName, status).
+		Observe(duration)
 }
 
 func headingsMap(node *html.Node, headingCounts map[string]int) {

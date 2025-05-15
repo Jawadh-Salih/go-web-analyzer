@@ -3,17 +3,23 @@ package analyzer
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+func ExtrackLinks(logger *slog.Logger, root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+	start := time.Now()
+	status := "Success"
+	functionName := "ExtractTitle"
 	defer wg.Done()
+
 	links := make([]Link, 0)
 	getLinks(root, pageUrl, &links)
 
@@ -41,6 +47,17 @@ func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultC
 
 	linkWg.Wait()
 	resultChan <- AnalyzerResponse{Links: links}
+
+	duration := time.Since(start).Seconds()
+	logger.Info("Function Executed",
+		slog.String("function", functionName),
+		slog.Float64("duration", duration),
+	)
+
+	observability.
+		DurationMetrics.
+		WithLabelValues(functionName, status).
+		Observe(duration)
 }
 
 func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) {
