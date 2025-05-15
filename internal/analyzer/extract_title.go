@@ -18,16 +18,16 @@ func ExtractTitle(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, resu
 	title := getTitle(root)
 	resultChan <- AnalyzerResponse{PageTitle: title}
 
-	duration := time.Since(start).Seconds()
+	duration := time.Since(start).Nanoseconds()
 	logger.Info("Function Executed",
 		slog.String("function", functionName),
-		slog.Float64("duration", duration),
+		slog.Int64("duration", duration),
 	)
 
 	observability.
 		DurationMetrics.
 		WithLabelValues(functionName, status).
-		Observe(duration)
+		Observe(float64(duration))
 }
 
 func getTitle(node *html.Node) string {

@@ -48,16 +48,16 @@ func ExtrackLinks(logger *slog.Logger, root *html.Node, pageUrl *url.URL, wg *sy
 	linkWg.Wait()
 	resultChan <- AnalyzerResponse{Links: links}
 
-	duration := time.Since(start).Seconds()
+	duration := time.Since(start).Nanoseconds()
 	logger.Info("Function Executed",
 		slog.String("function", functionName),
-		slog.Float64("duration", duration),
+		slog.Int64("duration", duration),
 	)
 
 	observability.
 		DurationMetrics.
 		WithLabelValues(functionName, status).
-		Observe(duration)
+		Observe(float64(duration))
 }
 
 func getLinks(node *html.Node, baseUrl *url.URL, links *[]Link) {

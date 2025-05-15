@@ -109,18 +109,18 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 		htmlV := detectHTMLVersion(htmlSnippet)
 		resultChan <- AnalyzerResponse{HtmlVersion: htmlV}
 
-		duration := time.Since(startTime).Seconds()
+		duration := time.Since(startTime).Nanoseconds()
 		functionName := "HtmlVersion Check"
 		logger.Info("Function Executed",
 			slog.String("function", functionName),
 			slog.String("status", status),
-			slog.Float64("duration", duration),
+			slog.Int64("duration", duration),
 		)
 
 		observability.
 			DurationMetrics.
 			WithLabelValues(functionName, status).
-			Observe(duration)
+			Observe(float64(duration))
 	}()
 
 	// -   What is the page title?
