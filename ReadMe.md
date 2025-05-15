@@ -28,7 +28,7 @@ To install and run the project, follow these steps:
 
 1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/your-repo/go-web-analyzer-lucytech.git
+    git clone https://github.com/Jawadh-Salih/go-web-analyzer.git
     cd go-web-analyzer-lucytech
     ```
 
@@ -85,6 +85,7 @@ I was using http.Get to check the URL accessibility. But it was not performant e
 - Explore the use of machine learning to identify patterns or anomalies in web page structures.
 - Create a CLI version of the application for easier integration into automated workflows.
 - Add support for exporting analysis results in various formats, such as JSON, CSV, or PDF.
+- Introduce CI/CD pipeline for the project
 
 ### Additional Notes
 - Ensure all dependencies are installed before running the project.
