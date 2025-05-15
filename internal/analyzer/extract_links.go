@@ -17,7 +17,7 @@ import (
 func ExtrackLinks(logger *slog.Logger, root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
 	start := time.Now()
 	status := "Success"
-	functionName := "ExtractTitle"
+	functionName := "ExtractLinks"
 	defer wg.Done()
 
 	links := make([]Link, 0)

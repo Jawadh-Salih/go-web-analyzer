@@ -16,13 +16,15 @@ func ExtractLoginForm(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, 
 	defer wg.Done()
 
 	var pwdField, submitButton bool
-	loginForm := hasLoginForm(root, &pwdField, &submitButton)
-	resultChan <- AnalyzerResponse{HasLoginForm: loginForm}
+	hasLoginForm(root, &pwdField, &submitButton)
+	// logger.Info("Login form okay", slog.Bool("Value", pwdField && submitButton))
+	resultChan <- AnalyzerResponse{HasLoginForm: pwdField && submitButton}
 
 	duration := time.Since(start).Nanoseconds()
 	logger.Info("Function Executed",
 		slog.String("function", functionName),
 		slog.Int64("duration", duration),
+		slog.Bool("Value", pwdField && submitButton),
 	)
 
 	observability.
@@ -31,11 +33,11 @@ func ExtractLoginForm(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, 
 		Observe(float64(duration))
 }
 
-func hasLoginForm(node *html.Node, hasPasswordField, hasSubmitButton *bool) bool {
+func hasLoginForm(node *html.Node, hasPasswordField, hasSubmitButton *bool) {
 	// if the node data is input check if the input type is password and submit
 
 	// if we can find these 2 info then
-	if node.Type == html.ElementNode && node.Data == "input" {
+	if node.Type == html.ElementNode && (node.Data == "input" || node.Data == "button") {
 		for _, attr := range node.Attr {
 			if attr.Key == "type" && attr.Val == "password" {
 				*hasPasswordField = true
@@ -45,18 +47,10 @@ func hasLoginForm(node *html.Node, hasPasswordField, hasSubmitButton *bool) bool
 				*hasSubmitButton = true
 			}
 		}
-
-		if *hasPasswordField && *hasSubmitButton {
-			return true
-		}
 	}
 
 	// recursively check for child nodes
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		if hasLoginForm(child, hasPasswordField, hasSubmitButton) {
-			return true
-		}
+		hasLoginForm(child, hasPasswordField, hasSubmitButton)
 	}
-
-	return *hasPasswordField && *hasSubmitButton
 }

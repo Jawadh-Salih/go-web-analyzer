@@ -180,3 +180,57 @@ func TestAnalyze_ValidUrl_WithHeadingss(t *testing.T) {
 	assert.NotEmpty(t, response.Headings)
 	assert.Empty(t, response.Links)
 }
+
+func TestAnalyze_ValidUrl_WithLoginForm(t *testing.T) {
+
+	t.Run("With Submit button as the Submit field", func(t *testing.T) {
+		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusOK)
+
+			// read from testdata
+			file, err := os.ReadFile("./testdata/extract_login_form_submit_button.html")
+			if err != nil {
+				log.Fatalf("Error on file %s", err.Error())
+			}
+
+			w.Write(file)
+		}))
+
+		// Test with a valid URL
+		request := AnalyzerRequest{Url: testServer.URL}
+
+		response, err := Analyze(context.Background(), request)
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, "HTML5", response.HtmlVersion)
+		assert.Equal(t, "Login Form", response.PageTitle)
+		assert.True(t, response.HasLoginForm)
+	})
+
+	t.Run("With Submit input as the Submit field", func(t *testing.T) {
+		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusOK)
+
+			// read from testdata
+			file, err := os.ReadFile("./testdata/extract_login_form_submit_input.html")
+			if err != nil {
+				log.Fatalf("Error on file %s", err.Error())
+			}
+
+			w.Write(file)
+		}))
+
+		// Test with a valid URL
+		request := AnalyzerRequest{Url: testServer.URL}
+
+		response, err := Analyze(context.Background(), request)
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, "HTML5", response.HtmlVersion)
+		assert.Equal(t, "Login Form", response.PageTitle)
+		assert.True(t, response.HasLoginForm)
+	})
+
+}

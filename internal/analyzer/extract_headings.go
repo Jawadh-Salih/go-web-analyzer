@@ -44,7 +44,7 @@ func headingsMap(node *html.Node, headingCounts map[string]int) {
 	}
 
 	// Recursively traverse the child nodes
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		headingsMap(c, headingCounts)
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		headingsMap(child, headingCounts)
 	}
 }

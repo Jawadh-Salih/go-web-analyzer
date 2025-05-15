@@ -158,6 +158,10 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 			if len(res.Links) > 0 {
 				result.Links = append(result.Links, res.Links...)
 			}
+			if res.HasLoginForm {
+				result.HasLoginForm = res.HasLoginForm
+			}
+
 		}
 	}
 
