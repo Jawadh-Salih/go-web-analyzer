@@ -17,6 +17,8 @@ The **Go Web Analyzer** is a tool designed to analyze web pages for specific ele
     }
   ```
 
+  URL is valid only when url starts as `http://` or `https://`
+
 - Inorder to watch the metrics `GET http://localhost:8080/metrics` endpoint can be used.
 
 ### Prerequisites
