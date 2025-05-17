@@ -124,16 +124,16 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	}()
 
 	// -   What is the page title?
-	go ExtractTitle(logger, rootNode, &wg, resultChan)
+	go ExtractTitle(ctx, rootNode, &wg, resultChan)
 
 	// -   How many headings of what level are in the document?
-	go ExtractHeadings(logger, rootNode, &wg, resultChan)
+	go ExtractHeadings(ctx, rootNode, &wg, resultChan)
 
 	// -   How many internal and external links are in the document? Are there any inaccessible links and how many?
-	go ExtrackLinks(logger, rootNode, pageUrl, &wg, resultChan)
+	go ExtrackLinks(ctx, rootNode, pageUrl, &wg, resultChan)
 
 	// -   Does the page contain a login form?
-	go ExtractLoginForm(logger, rootNode, &wg, resultChan)
+	go ExtractLoginForm(ctx, rootNode, &wg, resultChan)
 
 	// Close the result channel after all goroutines are done
 	go func() {

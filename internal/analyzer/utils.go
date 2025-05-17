@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 func validateURL(raw string) (*url.URL, error) {
@@ -45,5 +47,24 @@ func detectHTMLVersion(htmlStr string) string {
 		return "XHTML 1.0 Strict"
 	default:
 		return "Unknown"
+	}
+}
+
+func getMatchingNodes(node *html.Node, nodes *[]html.Node, nodesData ...string) {
+	// should check for href attribute
+
+	// if we can find these 2 info then
+	if node.Type == html.ElementNode {
+		// for loop to filter only what is in the nodesData
+		for _, data := range nodesData {
+			if data == node.Data {
+				*nodes = append(*nodes, *node)
+			}
+		}
+	}
+
+	// recursively check for child nodes
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		getMatchingNodes(child, nodes, nodesData...)
 	}
 }

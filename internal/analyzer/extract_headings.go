@@ -1,24 +1,24 @@
 package analyzer
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtractHeadings(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+func ExtractHeadings(ctx context.Context, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+	logger := logger.FromContext(ctx)
 	start := time.Now()
 	status := "Success"
 	functionName := "ExtractHeadings"
 	defer wg.Done()
 
-	headingCounts := make(map[string]int)
-
-	// Traverse the HTML node tree and count headings
-	headingsMap(root, headingCounts)
+	headingCounts := headingsMap(root)
 
 	// Send the result to the channel
 	resultChan <- AnalyzerResponse{Headings: headingCounts}
@@ -34,17 +34,15 @@ func ExtractHeadings(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, r
 		Observe(float64(duration))
 }
 
-func headingsMap(node *html.Node, headingCounts map[string]int) {
+func headingsMap(node *html.Node) map[string]int {
 	// Check if the node is an element node and is a heading tag (h1 to h6)
-	if node.Type == html.ElementNode && node.Data[0] == 'h' && len(node.Data) == 2 {
-		level := node.Data[1] - '0' // Convert 'h1' to level 1, 'h2' to level 2, etc.
-		if level >= 1 && level <= 6 {
-			headingCounts[node.Data]++
-		}
+	headingCounts := make(map[string]int)
+	nodes := make([]html.Node, 0)
+	getMatchingNodes(node, &nodes, "h1", "h2", "h3", "h4", "h5", "h6")
+
+	for _, value := range nodes {
+		headingCounts[value.Data]++
 	}
 
-	// Recursively traverse the child nodes
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		headingsMap(child, headingCounts)
-	}
+	return headingCounts
 }

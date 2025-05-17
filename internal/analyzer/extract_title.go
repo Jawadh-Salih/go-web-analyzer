@@ -1,15 +1,18 @@
 package analyzer
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtractTitle(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+func ExtractTitle(ctx context.Context, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
+	logger := logger.FromContext(ctx)
 	start := time.Now()
 	status := "Success"
 	functionName := "ExtractTitle"
@@ -31,19 +34,15 @@ func ExtractTitle(logger *slog.Logger, root *html.Node, wg *sync.WaitGroup, resu
 }
 
 func getTitle(node *html.Node) string {
-	if node.Type == html.ElementNode && node.Data == "title" {
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
+	nodes := make([]html.Node, 0)
+	getMatchingNodes(node, &nodes, "title")
+
+	if len(nodes) > 0 {
+		for child := nodes[0].FirstChild; child != nil; child = child.NextSibling {
 			if child.Type == html.TextNode {
 				return child.Data
 			}
 		}
-	}
-
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		if title := getTitle(child); title != "" {
-			return title
-		}
-
 	}
 
 	return ""
