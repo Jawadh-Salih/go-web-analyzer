@@ -2,6 +2,23 @@
 ### Project Overview
 The **Go Web Analyzer** is a tool designed to analyze web pages for specific elements such as links, headings, and other metadata. It provides insights into the structure and content of web pages, making it useful for developers, SEO analysts, and content creators. The application emphasizes robust error handling, logging, and performance monitoring.
 
+
+### Usage
+
+- Once you start up the application using `make clean run` or containerizing the app using the `make docker-run`
+  The application can be run in the browser with `http://localhost:8080` and then UI will make things easier to explore the app.
+
+- Other than using the browser. You can use a `POST http://localhost:8080/analyze` with following request body  
+  gives you the analyze response in a JSON format.
+
+  ```
+    {
+        "url":"http://example.com"
+    }
+  ```
+
+- Inorder to watch the metrics `GET http://localhost:8080/metrics` endpoint can be used.
+
 ### Prerequisites
 - **Go Programming Language**: Ensure Go is installed on your system. 
 - **Docker with Docker Desktop** (optional): For containerized deployment. 
@@ -15,13 +32,12 @@ The **Go Web Analyzer** is a tool designed to analyze web pages for specific ele
 - Frontend is a simple Index HTML created for the purpose of Presentation
 
 #### DevOps
-- **CI/CD**: GitHub Actions for automated testing and deployment
-- **Monitoring**: Prometheus and Grafana
+- **Monitoring**: Prometheus
 - **Containerization**: Docker
 
 
 ### External Dependencies
-- Using golang.org/x/net/html library for HTML Parsing. 
+- Using [golang.org/x/net/html](https://pkg.go.dev/golang.org/x/net/html) library for HTML Parsing. 
 
 ### Setup Instructions
 To install and run the project, follow these steps:
@@ -29,7 +45,7 @@ To install and run the project, follow these steps:
 1. **Clone the Repository**:
     ```bash
     git clone https://github.com/Jawadh-Salih/go-web-analyzer.git
-    cd go-web-analyzer-lucytech
+    cd go-web-analyzer
     ```
 
 2. **Install Dependencies**:
@@ -41,13 +57,13 @@ To install and run the project, follow these steps:
 3. **Build the Application**:
     Use the provided `Makefile` to build the project:
     ```bash
-    make build
+    make clean build
     ```
 
 4. **Run the Application**:
     Start the application using:
     ```bash
-    make run
+    make clean run
     ```
 
 5. **Run Tests**:
@@ -56,8 +72,17 @@ To install and run the project, follow these steps:
     make test
     ```
 
-8. **Access the Application**:
-    Open your browser and navigate to `http://localhost:8080` (or the configured port) to access the application.
+6. **Test Coverage**:
+    Test covergae can be checked in following ways:
+    - To see the coverage in the terminal
+    ```bash
+    make coverage
+    ```
+    - To see the coverage in the HTML
+    ```bash
+    make coverage-html-open
+    ```
+
 
 For additional details, refer to the `Makefile` and project documentation.
 present
@@ -69,7 +94,7 @@ Parsing HTML content is not straight forward and I had rely on a library (mentio
 
 I was having a performance issue when ran the analyzer logic sequencially for each different requirement. So having concurrent implementation optimized the logic immensely. For that I have used waitgroups and channels with a Defined struct to acheive a smooth parallelism. With this I managed to reduce the analyzer time from 9s to 6s.
 
-Further to this, I had another performance issue on Extracting the Links of the url where the links required to be tested for their accesbility. For that we need to call each of the links and see whether they give a 2XX response. Since the urls can be independently called I used worker pool and buffered channel to acheive parallelism and hence I was able to reduce the logic from 6s to 1s.
+Further to this, I had another performance issue on Extracting the Links of the url where the links required to be tested for their accesbility. For that we need to call each of the links and see whether they give a 2XX response. Since the urls can be independently called I used worker pool and buffered channel to acheive concurrency and hence I was able to reduce the logic from ~6.5s to ~1.5s (this was tested for the url https://github.com/login ).
 
 I was using http.Get to check the URL accessibility. But it was not performant enough. So I used http.Head to make it faster. 
 
