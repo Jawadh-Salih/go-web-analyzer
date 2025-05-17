@@ -1,5 +1,5 @@
 # Start from the official Golang base image
-FROM golang:1.24-alpine
+FROM golang:1.24-alpine as server
 
 # Set environment variables
 ENV GO111MODULE=on
@@ -8,7 +8,7 @@ ENV GO111MODULE=on
 WORKDIR /app
 
 # Copy go mod and source
-COPY go.mod ./
+COPY go.mod go.sum ./
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY web/ ./web/
@@ -19,6 +19,9 @@ RUN ls -R /app
 RUN go mod tidy 
 RUN go build -o webanalyzer ./cmd/main.go
 
+FROM scratch
+
+COPY --from=server app/webanalyzer /webanalyzer
 # Expose port
 EXPOSE 8080
 
