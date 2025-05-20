@@ -1,18 +1,15 @@
 package analyzer
 
 import (
-	"context"
 	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtractHeadings(ctx context.Context, root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
-	logger := logger.FromContext(ctx)
+func ExtractHeadings(root *html.Node, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
 	start := time.Now()
 	status := "Success"
 	functionName := "ExtractHeadings"
@@ -23,7 +20,7 @@ func ExtractHeadings(ctx context.Context, root *html.Node, wg *sync.WaitGroup, r
 	// Send the result to the channel
 	resultChan <- AnalyzerResponse{Headings: headingCounts}
 	duration := time.Since(start).Nanoseconds()
-	logger.Info("Function Executed",
+	analyzerLogger.Info("Function Executed",
 		slog.String("function", functionName),
 		slog.Int64("duration", duration),
 	)

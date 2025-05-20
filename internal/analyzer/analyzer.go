@@ -39,15 +39,17 @@ type Link struct {
 
 }
 
+var analyzerLogger *slog.Logger
+
 func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, error) {
-	logger := logger.FromContext(ctx)
+	analyzerLogger = logger.FromContext(ctx)
 	result := AnalyzerResponse{
 		Errors: make([]string, 0),
 	}
 
 	pageUrl, err := validateURL(request.Url)
 	if err != nil {
-		logger.Error("Invalid URL", slog.Any("Error", err))
+		analyzerLogger.Error("Invalid URL", slog.Any("Error", err))
 		return nil, err
 	}
 
@@ -63,13 +65,13 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
+		analyzerLogger.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
 		return nil, errors.New("Failed to reach URL")
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Failed to read response body", slog.Any("error", err))
+		analyzerLogger.Error("Failed to read response body", slog.Any("error", err))
 		return nil, err
 
 	}
@@ -77,13 +79,13 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	// check for html content type
 	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
 		err := fmt.Errorf("Invalid response: %s", resp.Header.Get("Content-Type"))
-		logger.Error(err.Error(), slog.String("content-type", resp.Header.Get("Content-Type")))
+		analyzerLogger.Error(err.Error(), slog.String("content-type", resp.Header.Get("Content-Type")))
 		return nil, err
 	}
 
 	rootNode, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		logger.Error("failed to parse HTML", slog.Any("error", err))
+		analyzerLogger.Error("failed to parse HTML", slog.Any("error", err))
 		return nil, err
 	}
 
@@ -111,7 +113,7 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 
 		duration := time.Since(startTime).Nanoseconds()
 		functionName := "HtmlVersion Check"
-		logger.Info("Function Executed",
+		analyzerLogger.Info("Function Executed",
 			slog.String("function", functionName),
 			slog.String("status", status),
 			slog.Int64("duration", duration),
@@ -124,16 +126,16 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 	}()
 
 	// -   What is the page title?
-	go ExtractTitle(ctx, rootNode, &wg, resultChan)
+	go ExtractTitle(rootNode, &wg, resultChan)
 
 	// -   How many headings of what level are in the document?
-	go ExtractHeadings(ctx, rootNode, &wg, resultChan)
+	go ExtractHeadings(rootNode, &wg, resultChan)
 
 	// -   How many internal and external links are in the document? Are there any inaccessible links and how many?
-	go ExtrackLinks(ctx, rootNode, pageUrl, &wg, resultChan)
+	go ExtrackLinks(rootNode, pageUrl, &wg, resultChan)
 
 	// -   Does the page contain a login form?
-	go ExtractLoginForm(ctx, rootNode, &wg, resultChan)
+	go ExtractLoginForm(rootNode, &wg, resultChan)
 
 	// Close the result channel after all goroutines are done
 	go func() {

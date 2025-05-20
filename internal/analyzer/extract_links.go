@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"context"
 	"log/slog"
 	"math"
 	"net/http"
@@ -9,13 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
 )
 
-func ExtrackLinks(ctx context.Context, root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
-	logger := logger.FromContext(ctx)
+func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultChan chan AnalyzerResponse) {
 	start := time.Now()
 	status := "Success"
 	functionName := "ExtractLinks"
@@ -46,7 +43,7 @@ func ExtrackLinks(ctx context.Context, root *html.Node, pageUrl *url.URL, wg *sy
 	resultChan <- AnalyzerResponse{Links: links}
 
 	duration := time.Since(start).Nanoseconds()
-	logger.Info("Function Executed",
+	analyzerLogger.Info("Function Executed",
 		slog.String("function", functionName),
 		slog.Int64("duration", duration),
 	)
