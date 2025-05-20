@@ -65,7 +65,7 @@ To install and run the project, follow these steps:
 4. **Run the Application**:
     Start the application using:
     ```bash
-    make clean run
+    make run
     ```
 
 5. **Run Tests**:
@@ -115,8 +115,10 @@ I was using http.Get to check the URL accessibility. But it was not performant e
 - Introduce CI/CD pipeline for the project
 
 ### Additional Notes
+- Existance of a login form is considered when the web page has a password field and a submit button.
 - Ensure all dependencies are installed before running the project.
 - Refer to the respective repository URLs for detailed setup instructions.
 - The application is designed with modularity in mind, allowing easy integration of additional features in the future.
 - Logging and error handling are critical components, ensuring smooth debugging and monitoring.
+
  

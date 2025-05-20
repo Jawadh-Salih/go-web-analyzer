@@ -87,13 +87,17 @@ func setupLinks(nodes <-chan *html.Node, baseUrl *url.URL, wg *sync.WaitGroup, l
 				// so it will be implemented once we have all the links extracted
 				client := &http.Client{Timeout: 3 * time.Second}
 
-				resp, err := client.Head(linkUrl.String())
-				defer resp.Body.Close()
+				var accessible bool
+				resp, _ := client.Head(linkUrl.String())
+				if resp != nil && resp.StatusCode == http.StatusOK {
+					accessible = true
+					resp.Body.Close()
+				}
 
 				*links = append(*links, Link{
 					LinkType:   getLinkType(linkUrl, baseUrl),
 					LinkUrl:    linkUrl.String(),
-					Accessible: err == nil && resp.StatusCode == http.StatusOK,
+					Accessible: accessible,
 				})
 
 			}
