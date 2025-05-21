@@ -48,7 +48,7 @@ func (s *Server) registerRoutes(withTemplates bool) {
 func (s *Server) analyzeHandler(c *gin.Context) {
 	var req analyzer.AnalyzerRequest
 	err := c.ShouldBindBodyWithJSON(&req)
-	if err != nil || req.Url == "" {
+	if err != nil {
 		s.logger.Error("Invalid request", slog.Any("error", err.Error()))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"Error": "Invalid request",

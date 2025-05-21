@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -20,16 +21,24 @@ import (
 
 // This will analyze the request url.
 type AnalyzerRequest struct {
-	Url string
+	Url string `json:"url" binding:"required,url"`
 }
 type AnalyzerResponse struct {
 	HtmlVersion  string         // HTML version
 	PageTitle    string         // Page title
 	Headings     map[string]int // Headings count
-	Links        []Link         // Links
+	LinkSummary  *LinkSummary   // Links
 	HasLoginForm bool           // true if the page has a login form
 	Errors       []string       // Errors encountered during analysis
 	err          error
+}
+
+type LinkSummary struct {
+	Links             []Link
+	InternalLinks     int
+	ExternalLinks     int
+	AccessibleLinks   int
+	InaccessibleLinks int
 }
 
 type Link struct {
@@ -47,10 +56,9 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 		Errors: make([]string, 0),
 	}
 
-	pageUrl, err := validateURL(request.Url)
+	pageUrl, err := url.Parse(request.Url)
 	if err != nil {
-		analyzerLogger.Error("Invalid URL", slog.Any("Error", err))
-		return nil, err
+		return nil, fmt.Errorf("invalid URL syntax: %w", err)
 	}
 
 	// TODO Timeouts to be configured
@@ -157,8 +165,8 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 			if len(res.Headings) > 0 {
 				result.Headings = res.Headings
 			}
-			if len(res.Links) > 0 {
-				result.Links = append(result.Links, res.Links...)
+			if res.LinkSummary != nil && len(res.LinkSummary.Links) > 0 {
+				result.LinkSummary = res.LinkSummary
 			}
 			if res.HasLoginForm {
 				result.HasLoginForm = res.HasLoginForm

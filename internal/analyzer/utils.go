@@ -1,36 +1,10 @@
 package analyzer
 
 import (
-	"fmt"
-	"net/url"
-	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
-
-func validateURL(raw string) (*url.URL, error) {
-	// TODO a regex to validate the URL
-	if raw == "" {
-		return nil, fmt.Errorf("empty URL")
-	}
-
-	urlRegex := regexp.MustCompile(`^(https?:\/\/)?(www\.)?([a-zA-Z0-9_-]+(:[a-zA-Z0-9_-]+)?@)?((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,5})|(\d{1,3}(\.\d{1,3}){3}))(:\d{1,5})?(\/.*)?$`)
-	if !urlRegex.MatchString(raw) {
-		return nil, fmt.Errorf("invalid URL: %s", raw)
-	}
-
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return nil, fmt.Errorf("invalid URL syntax: %w", err)
-	}
-
-	if parsed.Scheme == "" || parsed.Host == "" {
-		return nil, fmt.Errorf("invalid URL: missing scheme or host")
-	}
-
-	return parsed, nil
-}
 
 func detectHTMLVersion(htmlStr string) string {
 	lower := strings.ToLower(htmlStr)

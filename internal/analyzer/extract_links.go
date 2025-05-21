@@ -40,7 +40,25 @@ func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultC
 	close(nodeChan)
 
 	linkWg.Wait()
-	resultChan <- AnalyzerResponse{Links: links}
+	var accessibles, internals int
+	for _, link := range links {
+		if link.LinkType == "internal" {
+			internals++
+		}
+
+		if link.Accessible {
+			accessibles++
+		}
+	}
+
+	resultChan <- AnalyzerResponse{
+		LinkSummary: &LinkSummary{
+			Links:             links,
+			InternalLinks:     internals,
+			ExternalLinks:     len(links) - internals,
+			AccessibleLinks:   accessibles,
+			InaccessibleLinks: len(links) - accessibles,
+		}}
 
 	duration := time.Since(start).Nanoseconds()
 	analyzerLogger.Info("Function Executed",

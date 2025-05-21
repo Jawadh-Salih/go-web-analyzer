@@ -19,7 +19,7 @@ func TestAnalyze_EmptyUrl(t *testing.T) {
 	response, err := Analyze(context.Background(), request)
 
 	assert.Error(t, err)
-	assert.Equal(t, "empty URL", err.Error())
+	assert.Equal(t, `Get "": unsupported protocol scheme ""`, err.Error())
 	assert.Nil(t, response)
 }
 
@@ -29,12 +29,11 @@ func TestAnalyze_InvalidUrl(t *testing.T) {
 
 	response, err := Analyze(context.Background(), request)
 	assert.Error(t, err)
-	assert.Equal(t, "invalid URL: invalid-url", err.Error())
+	assert.Equal(t, `Get "invalid-url": unsupported protocol scheme ""`, err.Error())
 	assert.Nil(t, response)
 }
 
 func TestAnalyze_UnreachableUrl(t *testing.T) {
-
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable) // 503 - Service Unavailable
 	}))
@@ -105,7 +104,7 @@ func TestAnalyze_ValidUrl_UnknownHtmlVersion(t *testing.T) {
 	assert.Equal(t, "Unknown", response.HtmlVersion)
 	assert.Equal(t, "Example Domain", response.PageTitle)
 	assert.Empty(t, response.Headings)
-	assert.Empty(t, response.Links)
+	assert.Nil(t, response.LinkSummary)
 }
 
 func TestAnalyze_ValidUrl_Html5Version(t *testing.T) {
@@ -124,7 +123,7 @@ func TestAnalyze_ValidUrl_Html5Version(t *testing.T) {
 	assert.Equal(t, "HTML5", response.HtmlVersion)
 	assert.Equal(t, "Example Domain", response.PageTitle)
 	assert.Empty(t, response.Headings)
-	assert.Empty(t, response.Links)
+	assert.Nil(t, response.LinkSummary)
 }
 
 func TestAnalyze_ValidUrl_WithLinks(t *testing.T) {
@@ -151,7 +150,7 @@ func TestAnalyze_ValidUrl_WithLinks(t *testing.T) {
 	assert.Equal(t, "HTML5", response.HtmlVersion)
 	assert.Equal(t, "Sample Links", response.PageTitle)
 	assert.NotEmpty(t, response.Headings)
-	assert.NotEmpty(t, response.Links)
+	assert.NotNil(t, response.LinkSummary)
 }
 
 func TestAnalyze_ValidUrl_WithHeadingss(t *testing.T) {
@@ -178,7 +177,7 @@ func TestAnalyze_ValidUrl_WithHeadingss(t *testing.T) {
 	assert.Equal(t, "HTML5", response.HtmlVersion)
 	assert.Equal(t, "Sample Links", response.PageTitle)
 	assert.NotEmpty(t, response.Headings)
-	assert.Empty(t, response.Links)
+	assert.Nil(t, response.LinkSummary)
 }
 
 func TestAnalyze_ValidUrl_WithLoginForm(t *testing.T) {

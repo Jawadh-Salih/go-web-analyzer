@@ -6,33 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUrlValidation(t *testing.T) {
-	tests := []struct {
-		url      string
-		expected bool
-	}{
-		{"http://example.com", true},
-		{"https://example.com", true},
-		{"https://example.com:8080", true},
-		{"http://12.12.21.211:8080", true},
-		{"http://12.12.21.211:8080/path?abc=123", true},
-		{"ftp://example.com", false},
-		{"invalid-url", false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.url, func(t *testing.T) {
-			result, err := validateURL(test.url)
-			assert.Equal(t, test.expected, err == nil)
-			if err == nil {
-				assert.Equal(t, test.url, result.String())
-			} else {
-				assert.Nil(t, result)
-			}
-		})
-	}
-}
-
 func TestHtmlVersions(t *testing.T) {
 	// add tests for different content types
 	htmls := []struct {
