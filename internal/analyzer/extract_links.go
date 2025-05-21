@@ -52,7 +52,7 @@ func ExtrackLinks(root *html.Node, pageUrl *url.URL, wg *sync.WaitGroup, resultC
 	}
 
 	resultChan <- AnalyzerResponse{
-		LinkSummary: &LinkSummary{
+		LinkSummary: &LinkSummaryResponse{
 			Links:             links,
 			InternalLinks:     internals,
 			ExternalLinks:     len(links) - internals,

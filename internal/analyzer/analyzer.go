@@ -24,16 +24,16 @@ type AnalyzerRequest struct {
 	Url string `json:"url" binding:"required,url"`
 }
 type AnalyzerResponse struct {
-	HtmlVersion  string         // HTML version
-	PageTitle    string         // Page title
-	Headings     map[string]int // Headings count
-	LinkSummary  *LinkSummary   // Links
-	HasLoginForm bool           // true if the page has a login form
-	Errors       []string       // Errors encountered during analysis
+	HtmlVersion  string               // HTML version
+	PageTitle    string               // Page title
+	Headings     map[string]int       // Headings count
+	LinkSummary  *LinkSummaryResponse // Links
+	HasLoginForm bool                 // true if the page has a login form
+	Errors       []string             // Errors encountered during analysis
 	err          error
 }
 
-type LinkSummary struct {
+type LinkSummaryResponse struct {
 	Links             []Link
 	InternalLinks     int
 	ExternalLinks     int
@@ -61,12 +61,7 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 		return nil, fmt.Errorf("invalid URL syntax: %w", err)
 	}
 
-	// TODO Timeouts to be configured
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Get(request.Url)
+	resp, err := http.Get(request.Url)
 	if err != nil {
 		return nil, err
 	}

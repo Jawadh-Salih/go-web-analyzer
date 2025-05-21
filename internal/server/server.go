@@ -4,7 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +23,7 @@ func New(port string, logger *slog.Logger, withTemplates bool) *Server {
 
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.TimeoutMiddleware(3 * time.Second))
 
 	s := &Server{
 		port:   port,
