@@ -47,7 +47,7 @@ func TestAnalyze_UnreachableUrl(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(
 		t,
-		fmt.Sprintf("Failed to reach URL"),
+		fmt.Sprintf("Error on Accessing URL: %s", testServer.URL),
 		err.Error(),
 	)
 	assert.Nil(t, response)

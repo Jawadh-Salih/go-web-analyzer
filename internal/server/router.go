@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/Jawadh-Salih/go-web-analyzer/errors"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/analyzer"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/gin-gonic/gin"
@@ -63,6 +65,13 @@ func (s *Server) analyzeHandler(c *gin.Context) {
 	if err != nil {
 		// cast the error and see if it's an HttpApiError
 		// if not 500, if return the relevant code
+		if httpErr, ok := err.(errors.HttpError); ok {
+			c.JSON(httpErr.StatusCode(), gin.H{
+				"Error": fmt.Sprintf("Something went wrong with the URL - Status %d", httpErr.StatusCode()),
+			})
+			return
+		}
+
 		s.logger.Error("Internal Server Error", slog.Any("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Internal Server Error",

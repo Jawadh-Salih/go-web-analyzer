@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	apperrors "github.com/Jawadh-Salih/go-web-analyzer/errors"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/logger"
 	"github.com/Jawadh-Salih/go-web-analyzer/internal/observability"
 	"golang.org/x/net/html"
@@ -63,14 +64,20 @@ func Analyze(ctx context.Context, request AnalyzerRequest) (*AnalyzerResponse, e
 
 	resp, err := http.Get(request.Url)
 	if err != nil {
+		analyzerLogger.Error("Error on reach the URL", slog.String("url", request.Url), slog.Any("error", err))
 		return nil, err
 	}
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		analyzerLogger.Error("Failed to reach the URL", slog.String("srl", request.Url), slog.Int("status", resp.StatusCode))
-		return nil, errors.New("Failed to reach URL")
+		analyzerLogger.Error("Error Accessing URL", slog.String("url", request.Url), slog.Int("status", resp.StatusCode))
+		return nil, apperrors.NewAppError(
+			resp.StatusCode,
+			fmt.Sprintf("Error on Accessing URL: %s", request.Url),
+		)
 	}
+
+	analyzerLogger.Debug("Response", slog.Any("response", resp))
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

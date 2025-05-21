@@ -23,7 +23,7 @@ func New(port string, logger *slog.Logger, withTemplates bool) *Server {
 
 	r := gin.New()
 	r.Use(gin.Recovery())
-	r.Use(middleware.TimeoutMiddleware(3 * time.Second))
+	r.Use(middleware.TimeoutMiddleware(10 * time.Second))
 
 	s := &Server{
 		port:   port,

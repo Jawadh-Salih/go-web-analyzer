@@ -10,7 +10,7 @@ var loggerKey = "analyzer-logger"
 
 func New() *slog.Logger {
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: slog.LevelInfo, // TODO to make it configurable
 	})
 
 	return slog.New(handler)
