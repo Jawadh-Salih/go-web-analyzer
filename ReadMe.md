@@ -102,6 +102,8 @@ I was using http.Get to check the URL accessibility. But it was not performant e
 
 
 ### Future Improvements
+- Add load testing to see how performant enough the solution is when it comes to many requests at once.
+- Add dynamic result retrieval as currently their is only one request and frontend has to wait on all the results (links, headings) to be completed. And change the frontend to render when whatever the results available without waiting. 
 - Enhance error handling with Error codes to identify errors better.
 - Enhance the URL accessibility check by adding support for retry logic and handling rate-limiting scenarios.
 - Introduce a configuration file to allow users to customize the analyzer's behavior, such as setting timeouts or enabling/disabling specific features.
